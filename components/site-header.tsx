@@ -23,7 +23,10 @@ export async function SiteHeader() {
             FAQ
           </Link>
         </nav>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3">
+          <Button size="sm" nativeButton={false} render={<Link href="/book" />}>
+            Book a Wash
+          </Button>
           {session?.user ? (
             <UserMenu user={session.user} />
           ) : (
@@ -31,7 +34,7 @@ export async function SiteHeader() {
               <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
                 Sign In
               </Button>
-              <Button nativeButton={false} render={<Link href="/register" />}>
+              <Button variant="outline" nativeButton={false} render={<Link href="/register" />}>
                 Create Account
               </Button>
             </>
