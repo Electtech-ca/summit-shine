@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { getBusinessName } from "@/lib/business-name";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/auth/user-menu";
 
 export async function SiteHeader() {
-  const session = await auth();
+  const [session, businessName] = await Promise.all([auth(), getBusinessName()]);
 
   return (
     <header className="border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="font-display text-lg font-semibold text-primary">
-          Summit Shine
+          {businessName}
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           <Link href="/services" className="hover:text-primary">

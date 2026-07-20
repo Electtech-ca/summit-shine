@@ -113,7 +113,7 @@ export function VehiclesManager() {
               <Label htmlFor="size">Vehicle Size</Label>
               <Select value={size} onValueChange={(v) => setSize(v as Vehicle["size"])}>
                 <SelectTrigger id="size">
-                  <SelectValue />
+                  <SelectValue>{(v: Vehicle["size"]) => SIZE_LABELS[v]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(SIZE_LABELS).map(([value, label]) => (

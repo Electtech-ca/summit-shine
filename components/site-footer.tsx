@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { getBusinessName } from "@/lib/business-name";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const businessName = await getBusinessName();
+
   return (
     <footer className="border-t border-border bg-secondary/20">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:justify-between">
-        <p>© {new Date().getFullYear()} Summit Shine Car Wash & Detail Co. 🍁 British Columbia, Canada</p>
+        <p>
+          © {new Date().getFullYear()} {businessName} 🍁 British Columbia, Canada
+        </p>
         <nav className="flex gap-4">
           <Link href="/services" className="hover:text-foreground">
             Services

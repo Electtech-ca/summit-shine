@@ -376,7 +376,12 @@ export function BookingWizard({
                 <Label>Saved vehicle</Label>
                 <Select value={vehicleId} onValueChange={(v) => setVehicleId(v ?? "")}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a saved vehicle" />
+                    <SelectValue placeholder="Choose a saved vehicle">
+                      {(id: string) => {
+                        const v = vehicles.find((veh) => veh.id === id);
+                        return v ? `${v.make} ${v.model} — ${SIZE_LABELS[v.size]}` : "Choose a saved vehicle";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {vehicles.map((v) => (
@@ -394,7 +399,7 @@ export function BookingWizard({
                 <Label>Vehicle size</Label>
                 <Select value={manualSize} onValueChange={(v) => setManualSize(v as VehicleSize)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{(v: VehicleSize) => SIZE_LABELS[v]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(SIZE_LABELS).map(([value, label]) => (
