@@ -1,101 +1,210 @@
-import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { formatCentsToCAD } from "@/lib/format";
+import { getTodayStatus } from "@/lib/hours";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ServiceCard } from "@/components/service-card";
+import { HeroRotator } from "@/components/hero-rotator";
+import { TestimonialsCarousel } from "@/components/testimonials-carousel";
+import { NewsletterSignup } from "@/components/newsletter-signup";
+import { Droplets, Leaf, Sparkles, Snowflake } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const [featuredServices, plans, testimonials, hours, blackoutDates] = await Promise.all([
+    prisma.service.findMany({
+      where: { featured: true, active: true },
+      orderBy: { sortOrder: "asc" },
+      take: 3,
+    }),
+    prisma.membershipPlan.findMany({ where: { active: true }, orderBy: { priceCents: "asc" } }),
+    prisma.testimonial.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 8 }),
+    prisma.businessHours.findMany(),
+    prisma.blackoutDate.findMany(),
+  ]);
+
+  const status = getTodayStatus(hours, blackoutDates);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div>
+      {/* Hero */}
+      <section className="relative flex min-h-[70vh] items-center overflow-hidden">
+        <HeroRotator />
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center text-white">
+          <h1 className="font-display text-4xl font-semibold sm:text-6xl">
+            Shine like a BC morning.
+          </h1>
+          <p className="mt-4 text-lg text-white/90 sm:text-xl">
+            Premium car wash and detailing, done right — from the Coast Mountains to the Pacific
+            shoreline.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Button size="lg" nativeButton={false} render={<Link href="/book" />}>
+              Book a Wash
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+              nativeButton={false}
+              render={<Link href="/memberships" />}
+            >
+              View Memberships
+            </Button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      {/* Hours & wash status bar */}
+      <div className="border-b border-border bg-secondary/40">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+          <span className="flex items-center gap-2 font-medium">
+            <span
+              className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-accent" : "bg-destructive"}`}
+            />
+            {status.isOpen ? "Open now" : "Closed now"}
+            {status.openTime && status.closeTime && (
+              <span className="text-muted-foreground">
+                · Today {status.openTime}–{status.closeTime}
+              </span>
+            )}
+          </span>
+          <Link href="/faq" className="text-primary hover:underline">
+            Hours &amp; holiday closures
+          </Link>
+        </div>
+      </div>
+
+      {/* Featured services */}
+      {featuredServices.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-16">
+          <div className="mb-8 flex items-end justify-between">
+            <h2 className="font-display text-3xl font-semibold">Featured Services</h2>
+            <Link href="/services" className="text-sm font-medium text-primary hover:underline">
+              View all services →
+            </Link>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredServices.map((service) => (
+              <ServiceCard
+                key={service.id}
+                slug={service.slug}
+                name={service.name}
+                description={service.description}
+                image={service.images[0]}
+                durationMin={service.durationMin}
+                basePriceCents={service.basePriceCents}
+                salePriceCents={service.salePriceCents}
+                featured={service.featured}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Membership teaser */}
+      {plans.length > 0 && (
+        <section className="bg-secondary/30 py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mb-8 text-center">
+              <h2 className="font-display text-3xl font-semibold">Unlimited Washes, Member Pricing</h2>
+              <p className="mt-2 text-muted-foreground">
+                Pick a tier and never pay per-wash again.
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-3">
+              {plans.map((plan) => (
+                <Card key={plan.id}>
+                  <CardContent className="pt-6 text-center">
+                    <h3 className="font-display text-xl font-semibold">{plan.name}</h3>
+                    <p className="mt-2 font-display text-2xl font-semibold text-primary">
+                      {formatCentsToCAD(plan.priceCents)}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        /{plan.interval}
+                      </span>
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <Button nativeButton={false} render={<Link href="/memberships" />}>
+                Compare Plans
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Why Summit Shine */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <h2 className="mb-8 text-center font-display text-3xl font-semibold">Why Summit Shine</h2>
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: Droplets, title: "Water Reclamation", body: "Our bays recycle wash water to minimize environmental impact." },
+            { icon: Sparkles, title: "Spot-Free Rinse", body: "Deionized final rinse for a streak-free, spot-free finish." },
+            { icon: Leaf, title: "Eco-Friendly Soaps", body: "Biodegradable formulas that are gentle on BC's waterways." },
+            { icon: Snowflake, title: "Built for BC Winters", body: "Salt and undercarriage packages to fight coastal-winter corrosion." },
+          ].map((item) => (
+            <div key={item.title} className="text-center">
+              <item.icon className="mx-auto mb-3 h-8 w-8 text-accent" />
+              <h3 className="font-semibold">{item.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Gift card promo */}
+      <section className="bg-primary py-16 text-primary-foreground">
+        <div className="mx-auto max-w-4xl px-4 text-center">
+          <h2 className="font-display text-3xl font-semibold">Give the Gift of Shine</h2>
+          <p className="mt-2 text-primary-foreground/80">
+            Summit Shine gift cards — perfect for any BC driver on your list.
+          </p>
+          <div className="mt-6">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+              nativeButton={false}
+              render={<Link href="/services" />}
+            >
+              Shop Gift Cards
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      {testimonials.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-16">
+          <h2 className="mb-8 font-display text-3xl font-semibold">What Drivers Are Saying</h2>
+          <TestimonialsCarousel testimonials={testimonials} />
+        </section>
+      )}
+
+      {/* Map + Newsletter */}
+      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-16 md:grid-cols-2">
+        <div>
+          <h2 className="mb-4 font-display text-2xl font-semibold">Find Us</h2>
+          <div className="aspect-video overflow-hidden rounded-lg border border-border">
+            <iframe
+              title="Summit Shine location map"
+              className="h-full w-full"
+              loading="lazy"
+              src="https://www.google.com/maps?q=Vancouver,BC,Canada&output=embed"
+            />
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-4 font-display text-2xl font-semibold">Stay in the Loop</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Seasonal specials, new services, and BC-winter reminders — no spam.
+          </p>
+          <NewsletterSignup />
+        </div>
+      </section>
     </div>
   );
 }

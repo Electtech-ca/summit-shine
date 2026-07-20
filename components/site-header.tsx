@@ -12,6 +12,17 @@ export async function SiteHeader() {
         <Link href="/" className="font-display text-lg font-semibold text-primary">
           Summit Shine
         </Link>
+        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+          <Link href="/services" className="hover:text-primary">
+            Services
+          </Link>
+          <Link href="/memberships" className="hover:text-primary">
+            Memberships
+          </Link>
+          <Link href="/faq" className="hover:text-primary">
+            FAQ
+          </Link>
+        </nav>
         <nav className="flex items-center gap-4">
           {session?.user ? (
             <UserMenu user={session.user} />
