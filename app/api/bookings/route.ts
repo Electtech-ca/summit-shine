@@ -6,7 +6,8 @@ import { createBookingSchema } from "@/lib/validations/booking";
 import { calculatePricing, type PricingLineItem } from "@/lib/pricing";
 import { isSlotAvailable } from "@/lib/availability";
 import { getBookingSettings } from "@/lib/booking-settings";
-import { resolveDiscountByCode } from "@/lib/discount-resolution";
+import { resolveDiscountByCode, resolveBestAutomaticDiscount } from "@/lib/discount-resolution";
+import { getMemberDetailDiscountPct } from "@/lib/member-discount";
 import { generateBookingReference } from "@/lib/booking-reference";
 
 export async function GET() {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
   const serviceIds = data.items.map((i) => i.serviceId);
   const services = await prisma.service.findMany({
     where: { id: { in: serviceIds }, active: true },
-    include: { sizeModifiers: true },
+    include: { sizeModifiers: true, category: true },
   });
   if (services.length !== new Set(serviceIds).size) {
     return NextResponse.json({ error: "One or more services are unavailable" }, { status: 400 });
@@ -71,13 +72,25 @@ export async function POST(req: Request) {
     return sum + service.durationMin * item.quantity;
   }, 0);
 
+  // Members get their plan's detailing discount automatically applied to
+  // Detailing-category services, before any coupon/promotion is evaluated.
+  const memberDetailDiscountPct = await getMemberDetailDiscountPct(session?.user?.id);
+
+  function effectiveUnitPriceCents(service: (typeof services)[number]): number {
+    const base = service.salePriceCents ?? service.basePriceCents;
+    if (memberDetailDiscountPct > 0 && service.category.slug === "detailing") {
+      return Math.round((base * (100 - memberDetailDiscountPct)) / 100);
+    }
+    return base;
+  }
+
   const pricingItems: PricingLineItem[] = data.items.map((item) => {
     const service = serviceById.get(item.serviceId)!;
     const sizeModifier = service.sizeModifiers.find((m) => m.size === vehicleSize);
     return {
       id: service.id,
       name: service.name,
-      unitPriceCents: service.salePriceCents ?? service.basePriceCents,
+      unitPriceCents: effectiveUnitPriceCents(service),
       quantity: item.quantity,
       sizeDeltaCents: sizeModifier?.deltaCents ?? 0,
     };
@@ -98,6 +111,12 @@ export async function POST(req: Request) {
     }
     discountId = result.discountId;
     pricingDiscount = result.pricingDiscount;
+  } else {
+    const auto = await resolveBestAutomaticDiscount(pricingItems, session?.user?.id);
+    if (auto) {
+      discountId = auto.discountId;
+      pricingDiscount = auto.pricingDiscount;
+    }
   }
 
   const pricing = calculatePricing(pricingItems, pricingDiscount, {
@@ -173,7 +192,7 @@ export async function POST(req: Request) {
                 const sizeModifier = service.sizeModifiers.find((m) => m.size === vehicleSize);
                 return {
                   serviceId: service.id,
-                  priceCents: service.salePriceCents ?? service.basePriceCents,
+                  priceCents: effectiveUnitPriceCents(service),
                   sizeDeltaCents: sizeModifier?.deltaCents ?? 0,
                 };
               }),

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getBookingSettings } from "@/lib/booking-settings";
+import { getMemberDetailDiscountPct } from "@/lib/member-discount";
 import { BookingWizard } from "@/components/booking/booking-wizard";
 
 export default async function BookPage({
@@ -10,7 +11,7 @@ export default async function BookPage({
 }) {
   const session = await auth();
 
-  const [categories, vehicles, settings] = await Promise.all([
+  const [categories, vehicles, settings, memberDetailDiscountPct] = await Promise.all([
     prisma.serviceCategory.findMany({
       orderBy: { sortOrder: "asc" },
       include: {
@@ -25,6 +26,7 @@ export default async function BookPage({
       ? prisma.vehicle.findMany({ where: { userId: session.user.id } })
       : Promise.resolve([]),
     getBookingSettings(),
+    getMemberDetailDiscountPct(session?.user?.id),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function BookPage({
         isSignedIn={!!session?.user}
         preselectedServiceSlug={searchParams.service}
         publishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? ""}
+        memberDetailDiscountPct={memberDetailDiscountPct}
       />
     </div>
   );

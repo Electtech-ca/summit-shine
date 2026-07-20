@@ -49,10 +49,19 @@ export async function POST(req: Request) {
           data: { paymentStatus: "PAID", status: "CONFIRMED" },
         });
       } else if (pi.metadata?.orderId) {
-        await prisma.order.update({
+        const order = await prisma.order.update({
           where: { id: pi.metadata.orderId },
           data: { status: "PAID" },
+          include: { items: true },
         });
+        await prisma.$transaction(
+          order.items.map((item) =>
+            prisma.product.update({
+              where: { id: item.productId },
+              data: { stockQty: { decrement: item.qty } },
+            }),
+          ),
+        );
       }
       break;
     }

@@ -35,9 +35,7 @@ export default async function AdminOrdersPage() {
         </CardHeader>
         <CardContent>
           {orders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No product orders yet — retail checkout lands with the cart in a later step.
-            </p>
+            <p className="text-sm text-muted-foreground">No product orders yet.</p>
           ) : (
             <Table>
               <TableHeader>

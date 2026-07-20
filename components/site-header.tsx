@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getBusinessName } from "@/lib/business-name";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/auth/user-menu";
+import { CartLink } from "@/components/cart/cart-link";
 
 export async function SiteHeader() {
   const [session, businessName] = await Promise.all([auth(), getBusinessName()]);
@@ -25,6 +26,7 @@ export async function SiteHeader() {
           </Link>
         </nav>
         <nav className="flex items-center gap-3">
+          <CartLink />
           <Button size="sm" nativeButton={false} render={<Link href="/book" />}>
             Book a Wash
           </Button>

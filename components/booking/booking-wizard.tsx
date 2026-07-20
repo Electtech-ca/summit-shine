@@ -54,6 +54,7 @@ export function BookingWizard({
   isSignedIn,
   preselectedServiceSlug,
   publishableKey,
+  memberDetailDiscountPct,
 }: {
   categories: CategoryWithServices[];
   vehicles: Vehicle[];
@@ -61,9 +62,15 @@ export function BookingWizard({
   isSignedIn: boolean;
   preselectedServiceSlug?: string;
   publishableKey: string;
+  memberDetailDiscountPct: number;
 }) {
   const router = useRouter();
   const allServices = useMemo(() => categories.flatMap((c) => c.services), [categories]);
+  const categorySlugByServiceId = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((c) => c.services.forEach((s) => map.set(s.id, c.slug)));
+    return map;
+  }, [categories]);
 
   const [step, setStep] = useState(0);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(() => {
@@ -86,6 +93,7 @@ export function BookingWizard({
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
   const [appliedDiscount, setAppliedDiscount] = useState<PricingDiscount | null>(null);
+  const [isManualDiscount, setIsManualDiscount] = useState(false);
   const [promoChecking, setPromoChecking] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -111,10 +119,16 @@ export function BookingWizard({
 
   const pricingItems: PricingLineItem[] = selectedServices.map((s) => {
     const modifier = s.sizeModifiers.find((m) => m.size === vehicleSize);
+    const base = s.salePriceCents ?? s.basePriceCents;
+    const isDetailing = categorySlugByServiceId.get(s.id) === "detailing";
+    const unitPriceCents =
+      isDetailing && memberDetailDiscountPct > 0
+        ? Math.round((base * (100 - memberDetailDiscountPct)) / 100)
+        : base;
     return {
       id: s.id,
       name: s.name,
-      unitPriceCents: s.salePriceCents ?? s.basePriceCents,
+      unitPriceCents,
       quantity: 1,
       sizeDeltaCents: modifier?.deltaCents ?? 0,
     };
@@ -154,11 +168,27 @@ export function BookingWizard({
       if (!data.valid) {
         setPromoError(data.error ?? "Invalid promo code");
         setAppliedDiscount(null);
+        setIsManualDiscount(false);
         return;
       }
       setAppliedDiscount(data.discount);
+      setIsManualDiscount(true);
     } finally {
       setPromoChecking(false);
+    }
+  }
+
+  async function checkAutomaticDiscount() {
+    if (isManualDiscount || pricingItems.length === 0) return;
+    const res = await fetch("/api/discounts/auto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: pricingItems }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.discount) {
+      setAppliedDiscount(data.discount);
+      setIsManualDiscount(false);
     }
   }
 
@@ -176,7 +206,7 @@ export function BookingWizard({
         vehicleSize: vehicleId ? undefined : manualSize,
         startsAt: selectedSlot,
         notes: notes || undefined,
-        promoCode: appliedDiscount ? promoCode.trim() : undefined,
+        promoCode: isManualDiscount && appliedDiscount ? promoCode.trim() : undefined,
         guestName: isSignedIn ? undefined : guestName,
         guestEmail: isSignedIn ? undefined : guestEmail,
         guestPhone: isSignedIn ? undefined : guestPhone,
@@ -506,7 +536,13 @@ export function BookingWizard({
               <Button variant="outline" onClick={() => setStep(1)}>
                 Back
               </Button>
-              <Button disabled={!selectedSlot} onClick={() => setStep(3)}>
+              <Button
+                disabled={!selectedSlot}
+                onClick={() => {
+                  setStep(3);
+                  checkAutomaticDiscount();
+                }}
+              >
                 Continue
               </Button>
             </div>
@@ -533,6 +569,7 @@ export function BookingWizard({
                   onChange={(e) => {
                     setPromoCode(e.target.value);
                     setAppliedDiscount(null);
+                    setIsManualDiscount(false);
                     setPromoError(null);
                   }}
                   placeholder="WELCOME10"
@@ -543,7 +580,14 @@ export function BookingWizard({
               </div>
               {promoError && <p className="text-sm text-destructive">{promoError}</p>}
               {appliedDiscount && !promoError && (
-                <p className="text-sm text-accent">Promo code applied.</p>
+                <p className="text-sm text-accent">
+                  {isManualDiscount ? "Promo code applied." : "A promotion was automatically applied."}
+                </p>
+              )}
+              {memberDetailDiscountPct > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Your membership already includes {memberDetailDiscountPct}% off detailing services.
+                </p>
               )}
             </div>
 

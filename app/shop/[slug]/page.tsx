@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCentsToCAD } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 
 export async function generateStaticParams() {
   const products = await prisma.product.findMany({ where: { active: true }, select: { slug: true } });
@@ -57,9 +57,15 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
           </p>
 
           <div className="mt-8">
-            <Button size="lg" disabled={outOfStock}>
-              {outOfStock ? "Out of Stock" : "Add to Cart"}
-            </Button>
+            <AddToCartButton
+              productId={product.id}
+              slug={product.slug}
+              name={product.name}
+              priceCents={product.priceCents}
+              salePriceCents={product.salePriceCents}
+              image={product.images[0]}
+              outOfStock={outOfStock}
+            />
           </div>
         </div>
       </div>

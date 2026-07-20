@@ -6,6 +6,7 @@ import { resolveDiscountByCode } from "@/lib/discount-resolution";
 const schema = z.object({
   code: z.string().min(1),
   serviceIds: z.array(z.string()).min(1),
+  scope: z.enum(["service", "product"]).default("service"),
 });
 
 export async function POST(req: Request) {
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
     parsed.data.code.trim().toUpperCase(),
     parsed.data.serviceIds,
     session?.user?.id,
+    parsed.data.scope,
   );
 
   if (!result.ok) {
