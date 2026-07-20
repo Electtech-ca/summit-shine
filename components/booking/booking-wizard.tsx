@@ -90,6 +90,7 @@ export function BookingWizard({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const [notes, setNotes] = useState("");
+  const [recurrence, setRecurrence] = useState<"WEEKLY" | "BIWEEKLY" | "MONTHLY" | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
   const [appliedDiscount, setAppliedDiscount] = useState<PricingDiscount | null>(null);
@@ -109,6 +110,8 @@ export function BookingWizard({
   const [paymentStarting, setPaymentStarting] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [paymentStartError, setPaymentStartError] = useState<string | null>(null);
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardRedeemedCents, setGiftCardRedeemedCents] = useState(0);
 
   const selectedServices = allServices.filter((s) => selectedServiceIds.includes(s.id));
   const totalDurationMinutes = selectedServices.reduce((sum, s) => sum + s.durationMin, 0);
@@ -207,6 +210,7 @@ export function BookingWizard({
         startsAt: selectedSlot,
         notes: notes || undefined,
         promoCode: isManualDiscount && appliedDiscount ? promoCode.trim() : undefined,
+        recurrence: recurrence ?? undefined,
         guestName: isSignedIn ? undefined : guestName,
         guestEmail: isSignedIn ? undefined : guestEmail,
         guestPhone: isSignedIn ? undefined : guestPhone,
@@ -231,12 +235,17 @@ export function BookingWizard({
     const res = await fetch(`/api/bookings/${confirmation.id}/pay`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "full" }),
+      body: JSON.stringify({ mode: "full", giftCardCode: giftCardCode.trim() || undefined }),
     });
     const data = await res.json();
     setPaymentStarting(false);
     if (!res.ok) {
       setPaymentStartError(data.error ?? "Could not start payment. Please try again.");
+      return;
+    }
+    if (data.giftCardRedeemedCents) setGiftCardRedeemedCents(data.giftCardRedeemedCents);
+    if (data.fullyPaidByGiftCard) {
+      setPaymentDone(true);
       return;
     }
     if (data.clientSecret) {
@@ -271,7 +280,9 @@ export function BookingWizard({
       return (
         <Card>
           <CardHeader>
-            <CardTitle>Pay {formatCentsToCAD(confirmation.totalCents)}</CardTitle>
+            <CardTitle>
+              Pay {formatCentsToCAD(confirmation.totalCents - giftCardRedeemedCents)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <StripeElementsProvider publishableKey={publishableKey} clientSecret={paymentClientSecret}>
@@ -298,6 +309,17 @@ export function BookingWizard({
             Total due: {formatCentsToCAD(confirmation.totalCents)}
             {settings.payAtLocationEnabled ? " — pay at location, or online now" : ""}
           </p>
+          <div className="max-w-xs space-y-1">
+            <Label htmlFor="giftCardCode" className="text-sm text-muted-foreground">
+              Gift card code (optional)
+            </Label>
+            <Input
+              id="giftCardCode"
+              value={giftCardCode}
+              onChange={(e) => setGiftCardCode(e.target.value)}
+              placeholder="XXXX-XXXX-XXXX"
+            />
+          </div>
           {paymentStartError && <p className="text-sm text-destructive">{paymentStartError}</p>}
           <div className="flex flex-wrap gap-3 pt-2">
             <Button onClick={startOnlinePayment} disabled={paymentStarting}>
@@ -591,6 +613,36 @@ export function BookingWizard({
               )}
             </div>
 
+            {isSignedIn && (
+              <div className="space-y-2">
+                <Label htmlFor="recurrence">Repeat this booking</Label>
+                <Select
+                  value={recurrence ?? "NONE"}
+                  onValueChange={(v) => setRecurrence(v === "NONE" ? null : (v as typeof recurrence))}
+                >
+                  <SelectTrigger id="recurrence">
+                    <SelectValue>
+                      {(v: string) =>
+                        v === "NONE"
+                          ? "Just this once"
+                          : v === "WEEKLY"
+                            ? "Weekly"
+                            : v === "BIWEEKLY"
+                              ? "Every 2 weeks"
+                              : "Monthly"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Just this once</SelectItem>
+                    <SelectItem value="WEEKLY">Weekly</SelectItem>
+                    <SelectItem value="BIWEEKLY">Every 2 weeks</SelectItem>
+                    <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back
@@ -626,6 +678,18 @@ export function BookingWizard({
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
+                  </span>
+                </div>
+              )}
+              {recurrence && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Repeats</span>
+                  <span>
+                    {recurrence === "WEEKLY"
+                      ? "Weekly"
+                      : recurrence === "BIWEEKLY"
+                        ? "Every 2 weeks"
+                        : "Monthly"}
                   </span>
                 </div>
               )}

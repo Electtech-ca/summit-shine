@@ -16,6 +16,7 @@ export const createBookingSchema = z
     guestName: z.string().max(120).optional(),
     guestEmail: z.string().email().optional(),
     guestPhone: z.string().max(30).optional(),
+    recurrence: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
   })
   .refine((data) => data.vehicleId || data.vehicleSize, {
     message: "A vehicle or vehicle size is required",

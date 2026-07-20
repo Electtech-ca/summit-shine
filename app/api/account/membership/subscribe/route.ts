@@ -6,6 +6,7 @@ import { stripe } from "@/lib/stripe";
 import { getOrCreateStripeCustomerId } from "@/lib/stripe-customer";
 import { ensureStripePriceForPlan } from "@/lib/stripe-membership";
 import { handleApiError } from "@/lib/api-error";
+import { sendMembershipWelcomeEmail } from "@/lib/email";
 
 const schema = z.object({
   planId: z.string().min(1),
@@ -63,7 +64,16 @@ export async function POST(req: Request) {
         status: subscription.status,
         currentPeriodEnd,
       },
+      include: { plan: true },
     });
+
+    if (session.user.email) {
+      await sendMembershipWelcomeEmail({
+        to: session.user.email,
+        planName: membership.plan.name,
+        priceCents: membership.plan.priceCents,
+      });
+    }
 
     return NextResponse.json(membership, { status: 201 });
   } catch (err) {

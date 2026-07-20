@@ -6,6 +6,7 @@ import { formatCentsToCAD } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CancelBookingButton } from "@/components/account/cancel-booking-button";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   PENDING: "secondary",
@@ -68,7 +69,12 @@ export default async function AccountBookingsPage() {
                 {booking.vehicle.make} {booking.vehicle.model}
               </p>
             )}
-            <p className="mt-2 font-semibold">{formatCentsToCAD(booking.totalCents)}</p>
+            <div className="mt-2 flex items-center justify-between">
+              <p className="font-semibold">{formatCentsToCAD(booking.totalCents)}</p>
+              {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (
+                <CancelBookingButton bookingId={booking.id} />
+              )}
+            </div>
           </div>
         ))}
       </CardContent>

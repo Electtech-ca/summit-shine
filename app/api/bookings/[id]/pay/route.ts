@@ -4,11 +4,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { getOrCreateStripeCustomerId } from "@/lib/stripe-customer";
+import { redeemGiftCard, refundGiftCardRedemption } from "@/lib/gift-card-redemption";
 import { handleApiError } from "@/lib/api-error";
 
 const schema = z.object({
   mode: z.enum(["full", "deposit"]).default("full"),
   savedPaymentMethodId: z.string().optional(),
+  giftCardCode: z.string().optional(),
 });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -32,9 +34,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "This booking is already paid" }, { status: 400 });
   }
 
-  const amountCents = parsed.data.mode === "deposit" ? booking.depositCents : booking.totalCents;
+  let amountCents = parsed.data.mode === "deposit" ? booking.depositCents : booking.totalCents;
   if (amountCents <= 0) {
     return NextResponse.json({ error: "Nothing to charge" }, { status: 400 });
+  }
+
+  let giftCardId: string | null = null;
+  let giftCardRedeemedCents = 0;
+  if (parsed.data.giftCardCode) {
+    const result = await redeemGiftCard(parsed.data.giftCardCode, amountCents);
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    giftCardId = result.giftCardId;
+    giftCardRedeemedCents = result.redeemedCents;
+    amountCents -= giftCardRedeemedCents;
+  }
+
+  if (amountCents <= 0) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { paymentStatus: "PAID", status: "CONFIRMED" },
+    });
+    return NextResponse.json({ status: "succeeded", giftCardRedeemedCents, fullyPaidByGiftCard: true });
   }
 
   try {
@@ -62,6 +84,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({
         status: paymentIntent.status,
         clientSecret: paymentIntent.client_secret,
+        giftCardRedeemedCents,
       });
     }
 
@@ -78,8 +101,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       data: { stripePaymentIntentId: paymentIntent.id },
     });
 
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+    return NextResponse.json({ clientSecret: paymentIntent.client_secret, giftCardRedeemedCents });
   } catch (err) {
+    if (giftCardId) await refundGiftCardRedemption(giftCardId, giftCardRedeemedCents);
     return handleApiError(err);
   }
 }

@@ -9,6 +9,7 @@ import { getBookingSettings } from "@/lib/booking-settings";
 import { resolveDiscountByCode, resolveBestAutomaticDiscount } from "@/lib/discount-resolution";
 import { getMemberDetailDiscountPct } from "@/lib/member-discount";
 import { generateBookingReference } from "@/lib/booking-reference";
+import { sendBookingConfirmationEmail } from "@/lib/email";
 
 export async function GET() {
   const session = await auth();
@@ -208,8 +209,37 @@ export async function POST(req: Request) {
           });
         }
 
+        if (data.recurrence && session?.user) {
+          const recurring = await tx.recurringBooking.create({
+            data: {
+              userId: session.user.id,
+              frequency: data.recurrence,
+              dayOfWeek: startsAt.getDay(),
+              timeOfDay: `${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`,
+              active: true,
+            },
+          });
+          return tx.booking.update({
+            where: { id: created.id },
+            data: { recurrenceId: recurring.id },
+            include: { items: { include: { service: true } } },
+          });
+        }
+
         return created;
       });
+
+      const recipientEmail = session?.user?.email ?? data.guestEmail;
+      if (recipientEmail) {
+        await sendBookingConfirmationEmail({
+          to: recipientEmail,
+          reference: booking.reference,
+          serviceNames: booking.items.map((i) => i.service.name),
+          startsAt: booking.startsAt,
+          endsAt: booking.endsAt,
+          totalCents: booking.totalCents,
+        });
+      }
 
       return NextResponse.json(booking, { status: 201 });
     } catch (err) {

@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { generateGiftCardCode } from "@/lib/gift-card-code";
+import { sendGiftCardEmail, sendPaymentReceiptEmail } from "@/lib/email";
 
 function subscriptionCurrentPeriodEnd(sub: Stripe.Subscription): Date | undefined {
   const end = sub.items.data[0]?.current_period_end;
@@ -35,24 +36,42 @@ export async function POST(req: Request) {
       const pi = event.data.object as Stripe.PaymentIntent;
 
       if (pi.metadata?.type === "gift_card") {
-        await prisma.giftCard.create({
+        const amountCents = Number(pi.metadata.amountCents);
+        const giftCard = await prisma.giftCard.create({
           data: {
             code: generateGiftCardCode(),
-            initialCents: Number(pi.metadata.amountCents),
-            balanceCents: Number(pi.metadata.amountCents),
+            initialCents: amountCents,
+            balanceCents: amountCents,
             purchaserEmail: pi.metadata.purchaserEmail,
           },
         });
+        if (giftCard.purchaserEmail) {
+          await sendGiftCardEmail({
+            to: giftCard.purchaserEmail,
+            code: giftCard.code,
+            amountCents: giftCard.balanceCents,
+          });
+        }
       } else if (pi.metadata?.bookingId) {
-        await prisma.booking.update({
+        const booking = await prisma.booking.update({
           where: { id: pi.metadata.bookingId },
           data: { paymentStatus: "PAID", status: "CONFIRMED" },
+          include: { user: true },
         });
+        const recipientEmail = booking.user?.email ?? booking.guestEmail;
+        if (recipientEmail) {
+          await sendPaymentReceiptEmail({
+            to: recipientEmail,
+            reference: booking.reference,
+            description: "Booking payment",
+            amountCents: booking.totalCents,
+          });
+        }
       } else if (pi.metadata?.orderId) {
         const order = await prisma.order.update({
           where: { id: pi.metadata.orderId },
           data: { status: "PAID" },
-          include: { items: true },
+          include: { items: true, user: true },
         });
         await prisma.$transaction(
           order.items.map((item) =>
@@ -62,6 +81,14 @@ export async function POST(req: Request) {
             }),
           ),
         );
+        if (order.user?.email) {
+          await sendPaymentReceiptEmail({
+            to: order.user.email,
+            reference: order.id,
+            description: "Order payment",
+            amountCents: order.totalCents,
+          });
+        }
       }
       break;
     }
