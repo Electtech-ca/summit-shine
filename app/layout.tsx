@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import { Inter, Outfit } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+
+export const metadata: Metadata = {
+  title: "Summit Shine Car Wash & Detail Co.",
+  description:
+    "Premium car wash, detailing, and membership plans in British Columbia. Shine like a BC morning.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={cn(inter.variable, outfit.variable)}>
+      <body className="antialiased font-sans">{children}</body>
+    </html>
+  );
+}

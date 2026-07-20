@@ -1,0 +1,408 @@
+// Summit Shine Car Wash & Detail Co. — Prisma schema
+// See CLAUDE.md §7 for the source spec. Money is always stored as integer cents.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum VehicleSize {
+  SEDAN
+  SUV
+  TRUCK
+  OVERSIZED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  UNPAID
+  DEPOSIT_PAID
+  PAID
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  passwordHash     String?
+  role             Role      @default(CUSTOMER)
+  phone            String?
+  stripeCustomerId String?   @unique
+
+  accounts  Account[]
+  sessions  Session[]
+  vehicles  Vehicle[]
+  bookings  Booking[]
+  orders    Order[]
+  membership Membership?
+  recurringBookings RecurringBooking[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+}
+
+// --- NextAuth.js (Auth.js) adapter models — required for Google OAuth account
+// linking and (optionally) database sessions alongside the credentials provider. ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Vehicle {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  make   String
+  model  String
+  colour String?
+  plate  String?
+  size   VehicleSize @default(SEDAN)
+
+  bookings Booking[]
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  services  Service[]
+}
+
+model Service {
+  id             String          @id @default(cuid())
+  categoryId     String
+  category       ServiceCategory @relation(fields: [categoryId], references: [id])
+  name           String
+  slug           String          @unique
+  description    String
+  images         String[]
+  durationMin    Int
+  basePriceCents Int
+  salePriceCents Int?
+  active         Boolean         @default(true)
+  featured       Boolean         @default(false)
+  sortOrder      Int             @default(0)
+  sizeModifiers  SizeModifier[]
+  bookingItems   BookingItem[]
+}
+
+model SizeModifier {
+  id         String      @id @default(cuid())
+  serviceId  String
+  service    Service     @relation(fields: [serviceId], references: [id])
+  size       VehicleSize
+  deltaCents Int
+
+  @@unique([serviceId, size])
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  name           String
+  slug           String      @unique
+  description    String
+  images         String[]
+  priceCents     Int
+  salePriceCents Int?
+  sku            String?     @unique
+  stockQty       Int         @default(0)
+  lowStockAt     Int         @default(5)
+  active         Boolean     @default(true)
+  orderItems     OrderItem[]
+}
+
+model MembershipPlan {
+  id                String       @id @default(cuid())
+  name              String
+  description       String
+  priceCents        Int
+  interval          String       @default("month")
+  perks             String[]
+  detailDiscountPct Int          @default(0)
+  stripeProductId   String?
+  stripePriceId     String?
+  active            Boolean      @default(true)
+  members           Membership[]
+}
+
+model Membership {
+  id                   String          @id @default(cuid())
+  userId               String          @unique
+  user                 User            @relation(fields: [userId], references: [id])
+  planId               String
+  plan                 MembershipPlan  @relation(fields: [planId], references: [id])
+  stripeSubscriptionId String?         @unique
+  status               String // active, past_due, canceled, paused
+  startedAt            DateTime        @default(now())
+  currentPeriodEnd     DateTime?
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  reference     String        @unique // e.g. SS-2026-000123
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  guestName     String?
+  guestEmail    String?
+  guestPhone    String?
+  vehicleId     String?
+  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id])
+  startsAt      DateTime
+  endsAt        DateTime
+  status        BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  subtotalCents Int
+  discountCents Int           @default(0)
+  taxCents      Int
+  totalCents    Int
+  depositCents  Int           @default(0)
+  discountId    String?
+  discount      Discount?     @relation(fields: [discountId], references: [id])
+  stripePaymentIntentId String?
+  notes         String?
+  recurrenceId  String?
+  recurrence    RecurringBooking? @relation(fields: [recurrenceId], references: [id])
+  items         BookingItem[]
+  createdAt     DateTime      @default(now())
+
+  @@index([startsAt])
+}
+
+model BookingItem {
+  id             String  @id @default(cuid())
+  bookingId      String
+  booking        Booking @relation(fields: [bookingId], references: [id])
+  serviceId      String
+  service        Service @relation(fields: [serviceId], references: [id])
+  priceCents     Int // snapshot at time of booking
+  sizeDeltaCents Int     @default(0)
+}
+
+model RecurringBooking {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  frequency String // WEEKLY, BIWEEKLY, MONTHLY
+  dayOfWeek Int?
+  timeOfDay String
+  active    Boolean  @default(true)
+  bookings  Booking[]
+}
+
+model Discount {
+  id                  String       @id @default(cuid())
+  code                String?      @unique // null => automatic promotion
+  name                String
+  type                DiscountType
+  valuePct            Int?
+  valueCents          Int?
+  minSpendCents       Int?
+  appliesToServiceIds String[]
+  appliesToProductIds String[]
+  startsAt            DateTime?
+  endsAt              DateTime?
+  maxUses             Int?
+  usesPerCustomer     Int?
+  usedCount           Int          @default(0)
+  stackable           Boolean      @default(false)
+  active              Boolean      @default(true)
+  stripeCouponId      String?
+  bookings            Booking[]
+  orders              Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  status        OrderStatus @default(PENDING)
+  subtotalCents Int
+  discountCents Int         @default(0)
+  taxCents      Int
+  totalCents    Int
+  discountId    String?
+  discount      Discount?   @relation(fields: [discountId], references: [id])
+  stripePaymentIntentId String?
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id])
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  qty        Int
+  priceCents Int // snapshot
+}
+
+model GiftCard {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  initialCents   Int
+  balanceCents   Int
+  purchaserEmail String?
+  active         Boolean   @default(true)
+  expiresAt      DateTime?
+}
+
+model BusinessHours {
+  id        String  @id @default(cuid())
+  dayOfWeek Int     @unique // 0-6
+  openTime  String?
+  closeTime String?
+  closed    Boolean @default(false)
+}
+
+model BlackoutDate {
+  id     String   @id @default(cuid())
+  date   DateTime @unique
+  reason String?
+}
+
+model SiteSetting {
+  key   String @id
+  value Json
+}
+
+model ContentBlock {
+  // hero images, homepage sections, banner
+  id   String @id @default(cuid())
+  key  String @unique
+  data Json
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  author    String
+  body      String
+  rating    Int
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Faq {
+  id        String  @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+}
+
+// Not in the CLAUDE.md §7 schema block, but required to support /careers and
+// /contact (§4.5), which are specified as DB-driven.
+model JobPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  department  String?
+  location    String?
+  type        String? // full-time, part-time, seasonal
+  description String
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  applications JobApplication[]
+  createdAt   DateTime @default(now())
+}
+
+model JobApplication {
+  id        String   @id @default(cuid())
+  jobPostId String
+  jobPost   JobPost  @relation(fields: [jobPostId], references: [id])
+  name      String
+  email     String
+  phone     String?
+  resumeUrl String?
+  coverNote String?
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+}
