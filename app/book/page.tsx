@@ -39,6 +39,7 @@ export default async function BookPage({
         settings={settings}
         isSignedIn={!!session?.user}
         preselectedServiceSlug={searchParams.service}
+        publishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? ""}
       />
     </div>
   );

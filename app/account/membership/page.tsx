@@ -1,17 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { MembershipManager } from "@/components/stripe/membership-manager";
 
-export default function AccountMembershipPage() {
+export default async function AccountMembershipPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const [membership, plans] = await Promise.all([
+    prisma.membership.findUnique({ where: { userId: session.user.id }, include: { plan: true } }),
+    prisma.membershipPlan.findMany({ where: { active: true }, orderBy: { priceCents: "asc" } }),
+  ]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Membership</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Membership plans, saved cards, and billing self-serve will appear here once Stripe
-          Subscriptions are wired up.
-        </p>
-      </CardContent>
-    </Card>
+    <MembershipManager
+      publishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? ""}
+      membership={membership}
+      plans={plans}
+    />
   );
 }

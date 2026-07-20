@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/account/vehicles", label: "Vehicles" },
   { href: "/account/bookings", label: "Bookings" },
   { href: "/account/membership", label: "Membership" },
+  { href: "/account/payment-methods", label: "Payment Methods" },
 ];
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

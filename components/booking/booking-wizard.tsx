@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StripeElementsProvider } from "@/components/stripe/stripe-elements-provider";
+import { StripePaymentForm } from "@/components/stripe/stripe-payment-form";
 
 type ServiceWithModifiers = Service & { sizeModifiers: SizeModifier[] };
 type CategoryWithServices = ServiceCategory & { services: ServiceWithModifiers[] };
@@ -51,12 +53,14 @@ export function BookingWizard({
   settings,
   isSignedIn,
   preselectedServiceSlug,
+  publishableKey,
 }: {
   categories: CategoryWithServices[];
   vehicles: Vehicle[];
   settings: BookingSettings;
   isSignedIn: boolean;
   preselectedServiceSlug?: string;
+  publishableKey: string;
 }) {
   const router = useRouter();
   const allServices = useMemo(() => categories.flatMap((c) => c.services), [categories]);
@@ -86,9 +90,17 @@ export function BookingWizard({
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<{ reference: string; totalCents: number } | null>(
-    null,
-  );
+  const [confirmation, setConfirmation] = useState<{
+    id: string;
+    reference: string;
+    totalCents: number;
+  } | null>(null);
+
+  const [payingOnline, setPayingOnline] = useState(false);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentStarting, setPaymentStarting] = useState(false);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [paymentStartError, setPaymentStartError] = useState<string | null>(null);
 
   const selectedServices = allServices.filter((s) => selectedServiceIds.includes(s.id));
   const totalDurationMinutes = selectedServices.reduce((sum, s) => sum + s.durationMin, 0);
@@ -179,10 +191,70 @@ export function BookingWizard({
       return;
     }
 
-    setConfirmation({ reference: data.reference, totalCents: data.totalCents });
+    setConfirmation({ id: data.id, reference: data.reference, totalCents: data.totalCents });
+  }
+
+  async function startOnlinePayment() {
+    if (!confirmation) return;
+    setPaymentStarting(true);
+    setPaymentStartError(null);
+    const res = await fetch(`/api/bookings/${confirmation.id}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "full" }),
+    });
+    const data = await res.json();
+    setPaymentStarting(false);
+    if (!res.ok) {
+      setPaymentStartError(data.error ?? "Could not start payment. Please try again.");
+      return;
+    }
+    if (data.clientSecret) {
+      setPaymentClientSecret(data.clientSecret);
+      setPayingOnline(true);
+    }
   }
 
   if (confirmation) {
+    if (paymentDone) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Received</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-lg">
+              Reference: <span className="font-mono font-semibold">{confirmation.reference}</span>
+            </p>
+            <p className="text-accent">Thanks — your payment was received.</p>
+            <div className="flex gap-3 pt-2">
+              <Button nativeButton={false} render={<a href="/account/bookings" />}>
+                View My Bookings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (payingOnline && paymentClientSecret) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pay {formatCentsToCAD(confirmation.totalCents)}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StripeElementsProvider publishableKey={publishableKey} clientSecret={paymentClientSecret}>
+              <StripePaymentForm
+                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/account/bookings`}
+                onSuccess={() => setPaymentDone(true)}
+              />
+            </StripeElementsProvider>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -194,9 +266,13 @@ export function BookingWizard({
           </p>
           <p className="text-muted-foreground">
             Total due: {formatCentsToCAD(confirmation.totalCents)}
-            {settings.payAtLocationEnabled ? " (pay at location, or online — coming soon)" : ""}
+            {settings.payAtLocationEnabled ? " — pay at location, or online now" : ""}
           </p>
-          <div className="flex gap-3 pt-2">
+          {paymentStartError && <p className="text-sm text-destructive">{paymentStartError}</p>}
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button onClick={startOnlinePayment} disabled={paymentStarting}>
+              {paymentStarting ? "Loading..." : "Pay Online Now"}
+            </Button>
             <Button
               nativeButton={false}
               render={<a href="/account/bookings" />}
