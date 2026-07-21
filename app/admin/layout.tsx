@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/logo";
 
 const NAV_SECTIONS = [
   {
@@ -44,11 +45,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="mx-auto flex max-w-7xl gap-8 px-4 py-8">
       <aside className="hidden w-56 shrink-0 md:block">
-        <div className="mb-6">
-          <p className="font-display text-lg font-semibold text-primary">Admin</p>
-          <p className="text-xs text-muted-foreground">
-            {session.user.email} · {session.user.role}
-          </p>
+        <div className="mb-6 flex items-center gap-2.5">
+          <LogoMark className="h-8 w-8" />
+          <div>
+            <p className="font-display text-lg font-semibold text-primary">Admin</p>
+            <p className="text-xs text-muted-foreground">
+              {session.user.email} · {session.user.role}
+            </p>
+          </div>
         </div>
         <nav className="space-y-6">
           {NAV_SECTIONS.map((section, i) => (
