@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCentsToCAD } from "@/lib/format";
@@ -9,6 +10,21 @@ import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 export async function generateStaticParams() {
   const products = await prisma.product.findMany({ where: { active: true }, select: { slug: true } });
   return products.map((p) => ({ slug: p.slug }));
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const product = await prisma.product.findUnique({ where: { slug: params.slug } });
+  if (!product) return {};
+
+  return {
+    title: product.name,
+    description: product.description,
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      images: product.images[0] ? [product.images[0]] : undefined,
+    },
+  };
 }
 
 export default async function ProductDetailPage({ params }: { params: { slug: string } }) {

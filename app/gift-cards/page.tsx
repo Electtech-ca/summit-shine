@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { GiftCardPurchase } from "@/components/stripe/gift-card-purchase";
 
 export const metadata = {
-  title: "Gift Cards | Summit Shine Car Wash & Detail Co.",
+  title: "Gift Cards",
   description: "Buy a Summit Shine gift card for any BC driver on your list.",
 };
 

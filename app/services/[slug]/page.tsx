@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCentsToCAD } from "@/lib/format";
@@ -16,6 +17,21 @@ const SIZE_LABELS: Record<string, string> = {
 export async function generateStaticParams() {
   const services = await prisma.service.findMany({ where: { active: true }, select: { slug: true } });
   return services.map((s) => ({ slug: s.slug }));
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const service = await prisma.service.findUnique({ where: { slug: params.slug } });
+  if (!service) return {};
+
+  return {
+    title: service.name,
+    description: service.description,
+    openGraph: {
+      title: service.name,
+      description: service.description,
+      images: service.images[0] ? [service.images[0]] : undefined,
+    },
+  };
 }
 
 export default async function ServiceDetailPage({ params }: { params: { slug: string } }) {

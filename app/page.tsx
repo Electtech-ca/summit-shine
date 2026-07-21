@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatCentsToCAD } from "@/lib/format";
 import { getTodayStatus } from "@/lib/hours";
+import { getBusinessName } from "@/lib/business-name";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ServiceCard } from "@/components/service-card";
@@ -10,8 +11,10 @@ import { TestimonialsCarousel } from "@/components/testimonials-carousel";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { Droplets, Leaf, Sparkles, Snowflake } from "lucide-react";
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 export default async function Home() {
-  const [featuredServices, plans, testimonials, hours, blackoutDates] = await Promise.all([
+  const [featuredServices, plans, testimonials, hours, blackoutDates, businessName] = await Promise.all([
     prisma.service.findMany({
       where: { featured: true, active: true },
       orderBy: { sortOrder: "asc" },
@@ -21,12 +24,41 @@ export default async function Home() {
     prisma.testimonial.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 8 }),
     prisma.businessHours.findMany(),
     prisma.blackoutDate.findMany(),
+    getBusinessName(),
   ]);
 
   const status = getTodayStatus(hours, blackoutDates);
 
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AutoWash",
+    name: businessName,
+    image: "https://images.unsplash.com/photo-1519681393784-d120267933ba",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Vancouver",
+      addressRegion: "BC",
+      addressCountry: "CA",
+    },
+    geo: { "@type": "GeoCoordinates", latitude: 49.2827, longitude: -123.1207 },
+    telephone: "+1-604-555-0100",
+    priceRange: "$$",
+    openingHoursSpecification: hours
+      .filter((h) => !h.closed && h.openTime && h.closeTime)
+      .map((h) => ({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: `https://schema.org/${DAY_NAMES[h.dayOfWeek]}`,
+        opens: h.openTime,
+        closes: h.closeTime,
+      })),
+  };
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+      />
       {/* Hero */}
       <section className="relative flex min-h-[70vh] items-center overflow-hidden">
         <HeroRotator />

@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "FAQ | Summit Shine Car Wash & Detail Co.",
+  title: "FAQ",
   description: "Answers to common questions about booking, memberships, and our services.",
 };
 

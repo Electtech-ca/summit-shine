@@ -3,7 +3,7 @@ import { ServiceCard } from "@/components/service-card";
 import { ProductCard } from "@/components/product-card";
 
 export const metadata = {
-  title: "Services & Products | Summit Shine Car Wash & Detail Co.",
+  title: "Services & Products",
   description:
     "Browse exterior washes, interior detailing, ceramic coating, and retail products at Summit Shine.",
 };

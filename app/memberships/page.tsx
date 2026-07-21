@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Check } from "lucide-react";
 
 export const metadata = {
-  title: "Memberships | Summit Shine Car Wash & Detail Co.",
+  title: "Memberships",
   description: "Unlimited washes and detailing discounts with a Summit Shine membership plan.",
 };
 

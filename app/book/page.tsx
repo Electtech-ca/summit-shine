@@ -4,6 +4,11 @@ import { getBookingSettings } from "@/lib/booking-settings";
 import { getMemberDetailDiscountPct } from "@/lib/member-discount";
 import { BookingWizard } from "@/components/booking/booking-wizard";
 
+export const metadata = {
+  title: "Book a Wash",
+  description: "Book your car wash or detailing appointment online in minutes.",
+};
+
 export default async function BookPage({
   searchParams,
 }: {

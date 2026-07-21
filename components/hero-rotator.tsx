@@ -12,13 +12,23 @@ const HERO_IMAGES = [
 
 export function HeroRotator() {
   const [index, setIndex] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(query.matches);
+    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    query.addEventListener("change", listener);
+    return () => query.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return;
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % HERO_IMAGES.length);
     }, 6000);
     return () => clearInterval(id);
-  }, []);
+  }, [reducedMotion]);
 
   return (
     <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -30,7 +40,8 @@ export function HeroRotator() {
           fill
           priority={i === 0}
           className={cn(
-            "object-cover transition-opacity duration-1000",
+            "object-cover",
+            !reducedMotion && "transition-opacity duration-1000",
             i === index ? "opacity-100" : "opacity-0",
           )}
         />

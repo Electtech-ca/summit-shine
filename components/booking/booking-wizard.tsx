@@ -342,10 +342,11 @@ export function BookingWizard({
 
   return (
     <div>
-      <ol className="mb-8 flex flex-wrap gap-2 text-sm">
+      <ol className="mb-8 flex flex-wrap gap-2 text-sm" aria-label="Booking steps">
         {STEPS.map((label, i) => (
           <li
             key={label}
+            aria-current={i === step ? "step" : undefined}
             className={`rounded-full px-3 py-1 ${
               i === step
                 ? "bg-primary text-primary-foreground"
