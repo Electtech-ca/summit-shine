@@ -93,7 +93,7 @@ async function seedCategoriesAndServices() {
       durationMin: 30,
       basePriceCents: 3499,
       sortOrder: 0,
-      images: [UNSPLASH("photo-1552353617-3bfe6e08c1b7")],
+      images: [UNSPLASH("photo-1654522659761-b6ad370e0bb3")],
     },
     {
       categorySlug: "interior",
@@ -105,7 +105,7 @@ async function seedCategoriesAndServices() {
       basePriceCents: 14999,
       featured: true,
       sortOrder: 1,
-      images: [UNSPLASH("photo-1605515298946-d0573716b1c1")],
+      images: [UNSPLASH("photo-1652860316277-370ca5b1b1df")],
     },
     {
       categorySlug: "detailing",
@@ -247,7 +247,9 @@ async function seedProducts() {
       description: "A BC-forest scented air freshener — cedar and pine.",
       priceCents: 699,
       stockQty: 120,
-      images: [UNSPLASH("photo-1518127249613-14b888fb610e")],
+      images: [
+        "https://images.pexels.com/photos/14999946/pexels-photo-14999946.jpeg?auto=compress&cs=tinysrgb&w=1600",
+      ],
     },
     {
       name: "Spray Wax",
@@ -279,7 +281,7 @@ async function seedProducts() {
       description: "Ultra-soft microfibre wash mitt, safe for all paint types.",
       priceCents: 1299,
       stockQty: 100,
-      images: [UNSPLASH("photo-1605164599901-91c0d3b3b6dc")],
+      images: [UNSPLASH("photo-1761934657948-708146148588")],
     },
     {
       name: "Gift Card — $25",
