@@ -7,6 +7,7 @@ import Google from "next-auth/providers/google";
 // this in auth.ts, which only runs in the Node.js runtime.
 export const authConfig = {
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
