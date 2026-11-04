@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Testimonial } from "@prisma/client";
@@ -12,7 +13,7 @@ export function TestimonialsModerator({ testimonials }: { testimonials: Testimon
 
   async function setApproved(id: string, approved: boolean) {
     setPendingId(id);
-    await fetch(`/api/admin/testimonials/${id}`, {
+    await fetch(withBasePath(`/api/admin/testimonials/${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ approved }),
@@ -23,7 +24,7 @@ export function TestimonialsModerator({ testimonials }: { testimonials: Testimon
 
   async function remove(id: string) {
     setPendingId(id);
-    await fetch(`/api/admin/testimonials/${id}`, { method: "DELETE" });
+    await fetch(withBasePath(`/api/admin/testimonials/${id}`), { method: "DELETE" });
     setPendingId(null);
     router.refresh();
   }

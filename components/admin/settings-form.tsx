@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
     setSaving(true);
     setError(null);
 
-    const res = await fetch("/api/admin/settings", {
+    const res = await fetch(withBasePath("/api/admin/settings"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),

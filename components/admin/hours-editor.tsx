@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BusinessHours } from "@prisma/client";
@@ -34,7 +35,7 @@ export function HoursEditor({ hours }: { hours: BusinessHours[] }) {
   async function handleSave() {
     setSaving(true);
     setSaved(false);
-    await fetch("/api/admin/hours", {
+    await fetch(withBasePath("/api/admin/hours"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hours: rows }),

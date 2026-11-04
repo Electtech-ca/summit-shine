@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BookingStatus, PaymentStatus } from "@prisma/client";
@@ -55,7 +56,7 @@ export function BookingStatusPanel({
     setSaving(true);
     setError(null);
     setMessage(null);
-    const res = await fetch(`/api/admin/bookings/${bookingId}`, {
+    const res = await fetch(withBasePath(`/api/admin/bookings/${bookingId}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -74,7 +75,7 @@ export function BookingStatusPanel({
     setRefunding(true);
     setError(null);
     setMessage(null);
-    const res = await fetch(`/api/admin/bookings/${bookingId}/refund`, {
+    const res = await fetch(withBasePath(`/api/admin/bookings/${bookingId}/refund`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),

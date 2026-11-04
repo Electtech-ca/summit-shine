@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
 
   async function handleCancel() {
     setCanceling(true);
-    const res = await fetch(`/api/bookings/${bookingId}/cancel`, { method: "POST" });
+    const res = await fetch(withBasePath(`/api/bookings/${bookingId}/cancel`), { method: "POST" });
     const data = await res.json().catch(() => ({}));
     setCanceling(false);
 

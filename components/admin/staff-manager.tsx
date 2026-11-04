@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Role, User } from "@prisma/client";
@@ -28,7 +29,7 @@ export function StaffManager({ staff, currentUserId }: { staff: User[]; currentU
     setSubmitting(true);
     setError(null);
 
-    const res = await fetch("/api/admin/staff", {
+    const res = await fetch(withBasePath("/api/admin/staff"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, role }),
@@ -48,7 +49,7 @@ export function StaffManager({ staff, currentUserId }: { staff: User[]; currentU
 
   async function handleRemove(id: string) {
     setPendingId(id);
-    await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
+    await fetch(withBasePath(`/api/admin/staff/${id}`), { method: "DELETE" });
     setPendingId(null);
     router.refresh();
   }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { withBasePath } from "@/lib/base-path";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +50,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
           <DropdownMenuItem render={<Link href="/admin" />}>Admin Panel</DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+        <DropdownMenuItem onClick={() => signOut({ callbackUrl: withBasePath("/") })}>
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>

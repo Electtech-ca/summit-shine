@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import type { Membership, MembershipPlan } from "@prisma/client";
 import { formatCentsToCAD } from "@/lib/format";
@@ -28,7 +29,7 @@ export function MembershipManager({
 
   async function openBillingPortal() {
     setPortalLoading(true);
-    const res = await fetch("/api/account/membership/portal", { method: "POST" });
+    const res = await fetch(withBasePath("/api/account/membership/portal"), { method: "POST" });
     const data = await res.json();
     setPortalLoading(false);
     if (data.url) window.location.href = data.url;
@@ -38,7 +39,7 @@ export function MembershipManager({
     setSelectedPlanId(planId);
     setError(null);
     setClientSecret(null);
-    const res = await fetch("/api/account/payment-methods/setup-intent", { method: "POST" });
+    const res = await fetch(withBasePath("/api/account/payment-methods/setup-intent"), { method: "POST" });
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Could not start checkout. Please try again.");
@@ -52,7 +53,7 @@ export function MembershipManager({
     setSubscribing(true);
     setError(null);
 
-    const res = await fetch("/api/account/membership/subscribe", {
+    const res = await fetch(withBasePath("/api/account/membership/subscribe"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId: selectedPlanId, paymentMethodId }),
@@ -147,7 +148,7 @@ export function MembershipManager({
             <StripeElementsProvider publishableKey={publishableKey} clientSecret={clientSecret}>
               <StripeSetupForm
                 submitLabel={subscribing ? "Starting membership..." : "Start Membership"}
-                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/account/membership`}
+                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}${withBasePath("/account/membership")}`}
                 onSuccess={completeSubscription}
               />
             </StripeElementsProvider>

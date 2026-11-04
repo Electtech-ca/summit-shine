@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/cart/cart-context";
@@ -53,7 +54,7 @@ export function CartPageClient({
     if (!promoCode.trim()) return;
     setPromoChecking(true);
     try {
-      const res = await fetch("/api/discounts/validate", {
+      const res = await fetch(withBasePath("/api/discounts/validate"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,7 +85,7 @@ export function CartPageClient({
     }
     setCheckingOut(true);
 
-    const res = await fetch("/api/cart/checkout", {
+    const res = await fetch(withBasePath("/api/cart/checkout"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -127,7 +128,7 @@ export function CartPageClient({
         <CardContent>
           <StripeElementsProvider publishableKey={publishableKey} clientSecret={clientSecret}>
             <StripePaymentForm
-              returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/cart`}
+              returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}${withBasePath("/cart")}`}
               onSuccess={() => {
                 clear();
                 setPaymentDone(true);

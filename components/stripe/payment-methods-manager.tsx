@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ type PaymentMethod = {
 };
 
 async function fetchPaymentMethods(): Promise<{ paymentMethods: PaymentMethod[]; defaultId: string | null }> {
-  const res = await fetch("/api/account/payment-methods");
+  const res = await fetch(withBasePath("/api/account/payment-methods"));
   if (!res.ok) throw new Error("Failed to load payment methods");
   return res.json();
 }
@@ -30,7 +31,7 @@ export function PaymentMethodsManager({ publishableKey }: { publishableKey: stri
 
   const deleteMethod = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/account/payment-methods/${id}`, { method: "DELETE" });
+      const res = await fetch(withBasePath(`/api/account/payment-methods/${id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to remove card");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payment-methods"] }),
@@ -39,7 +40,7 @@ export function PaymentMethodsManager({ publishableKey }: { publishableKey: stri
   async function startAddCard() {
     setAddingCard(true);
     setError(null);
-    const res = await fetch("/api/account/payment-methods/setup-intent", { method: "POST" });
+    const res = await fetch(withBasePath("/api/account/payment-methods/setup-intent"), { method: "POST" });
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Could not start card setup. Please try again.");
@@ -85,7 +86,7 @@ export function PaymentMethodsManager({ publishableKey }: { publishableKey: stri
           <div className="border-t pt-4">
             <StripeElementsProvider publishableKey={publishableKey} clientSecret={clientSecret}>
               <StripeSetupForm
-                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/account/payment-methods`}
+                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}${withBasePath("/account/payment-methods")}`}
                 onSuccess={() => {
                   setAddingCard(false);
                   setClientSecret(null);

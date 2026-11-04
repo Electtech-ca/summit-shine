@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export function ProfileForm({
     e.preventDefault();
     setStatus("saving");
 
-    const res = await fetch("/api/account", {
+    const res = await fetch(withBasePath("/api/account"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, phone }),

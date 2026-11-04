@@ -1,3 +1,4 @@
+import { withBasePath } from "@/lib/base-path";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatCentsToCAD } from "@/lib/format";
@@ -27,7 +28,7 @@ export default async function AdminCustomersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl font-semibold text-primary">Customers</h1>
-        <Button variant="outline" nativeButton={false} render={<a href="/api/admin/customers/export" />}>
+        <Button variant="outline" nativeButton={false} render={<a href={withBasePath("/api/admin/customers/export")} />}>
           Export CSV
         </Button>
       </div>

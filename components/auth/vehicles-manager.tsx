@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ const SIZE_LABELS: Record<Vehicle["size"], string> = {
 };
 
 async function fetchVehicles(): Promise<Vehicle[]> {
-  const res = await fetch("/api/account/vehicles");
+  const res = await fetch(withBasePath("/api/account/vehicles"));
   if (!res.ok) throw new Error("Failed to load vehicles");
   return res.json();
 }
@@ -51,7 +52,7 @@ export function VehiclesManager() {
 
   const createVehicle = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/account/vehicles", {
+      const res = await fetch(withBasePath("/api/account/vehicles"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ make, model, colour, plate, size }),
@@ -71,7 +72,7 @@ export function VehiclesManager() {
 
   const deleteVehicle = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/account/vehicles/${id}`, { method: "DELETE" });
+      const res = await fetch(withBasePath(`/api/account/vehicles/${id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to remove vehicle");
     },
     onSuccess: () => {
