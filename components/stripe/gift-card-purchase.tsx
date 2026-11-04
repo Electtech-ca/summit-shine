@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { formatCentsToCAD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export function GiftCardPurchase({
       return;
     }
 
-    const res = await fetch("/api/gift-cards/checkout", {
+    const res = await fetch(withBasePath("/api/gift-cards/checkout"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amountCents: effectiveAmountCents, purchaserEmail: email }),
@@ -117,7 +118,7 @@ export function GiftCardPurchase({
           <div className="border-t pt-4">
             <StripeElementsProvider publishableKey={publishableKey} clientSecret={clientSecret}>
               <StripePaymentForm
-                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/gift-cards`}
+                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}${withBasePath("/gift-cards")}`}
                 onSuccess={() => setSuccess(true)}
               />
             </StripeElementsProvider>

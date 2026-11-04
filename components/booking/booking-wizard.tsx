@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Service, ServiceCategory, SizeModifier, Vehicle, VehicleSize } from "@prisma/client";
@@ -148,7 +149,7 @@ export function BookingWizard({
     setSelectedSlot(null);
     try {
       const res = await fetch(
-        `/api/availability?date=${date}&durationMinutes=${totalDurationMinutes}`,
+        withBasePath(`/api/availability?date=${date}&durationMinutes=${totalDurationMinutes}`),
       );
       const data = await res.json();
       setSlots(data.slots ?? []);
@@ -162,7 +163,7 @@ export function BookingWizard({
     if (!promoCode.trim()) return;
     setPromoChecking(true);
     try {
-      const res = await fetch("/api/discounts/validate", {
+      const res = await fetch(withBasePath("/api/discounts/validate"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: promoCode.trim(), serviceIds: selectedServiceIds }),
@@ -183,7 +184,7 @@ export function BookingWizard({
 
   async function checkAutomaticDiscount() {
     if (isManualDiscount || pricingItems.length === 0) return;
-    const res = await fetch("/api/discounts/auto", {
+    const res = await fetch(withBasePath("/api/discounts/auto"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items: pricingItems }),
@@ -200,7 +201,7 @@ export function BookingWizard({
     setSubmitting(true);
     setSubmitError(null);
 
-    const res = await fetch("/api/bookings", {
+    const res = await fetch(withBasePath("/api/bookings"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -232,7 +233,7 @@ export function BookingWizard({
     if (!confirmation) return;
     setPaymentStarting(true);
     setPaymentStartError(null);
-    const res = await fetch(`/api/bookings/${confirmation.id}/pay`, {
+    const res = await fetch(withBasePath(`/api/bookings/${confirmation.id}/pay`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "full", giftCardCode: giftCardCode.trim() || undefined }),
@@ -267,7 +268,7 @@ export function BookingWizard({
             </p>
             <p className="text-accent">Thanks — your payment was received.</p>
             <div className="flex gap-3 pt-2">
-              <Button nativeButton={false} render={<a href="/account/bookings" />}>
+              <Button nativeButton={false} render={<a href={withBasePath("/account/bookings")} />}>
                 View My Bookings
               </Button>
             </div>
@@ -287,7 +288,7 @@ export function BookingWizard({
           <CardContent>
             <StripeElementsProvider publishableKey={publishableKey} clientSecret={paymentClientSecret}>
               <StripePaymentForm
-                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/account/bookings`}
+                returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}${withBasePath("/account/bookings")}`}
                 onSuccess={() => setPaymentDone(true)}
               />
             </StripeElementsProvider>
@@ -327,7 +328,7 @@ export function BookingWizard({
             </Button>
             <Button
               nativeButton={false}
-              render={<a href="/account/bookings" />}
+              render={<a href={withBasePath("/account/bookings")} />}
             >
               View My Bookings
             </Button>

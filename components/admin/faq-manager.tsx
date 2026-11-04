@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Faq } from "@prisma/client";
@@ -18,7 +19,7 @@ export function FaqManager({ faqs }: { faqs: Faq[] }) {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await fetch("/api/admin/faq", {
+    await fetch(withBasePath("/api/admin/faq"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, answer, sortOrder: faqs.length, active: true }),
@@ -31,7 +32,7 @@ export function FaqManager({ faqs }: { faqs: Faq[] }) {
 
   async function remove(id: string) {
     setPendingId(id);
-    await fetch(`/api/admin/faq/${id}`, { method: "DELETE" });
+    await fetch(withBasePath(`/api/admin/faq/${id}`), { method: "DELETE" });
     setPendingId(null);
     router.refresh();
   }

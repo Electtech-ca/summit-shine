@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Service, ServiceCategory, VehicleSize } from "@prisma/client";
@@ -38,7 +39,7 @@ export function WalkInForm({ categories }: { categories: CategoryWithServices[] 
     setSubmitting(true);
     setError(null);
 
-    const res = await fetch("/api/admin/bookings/walk-in", {
+    const res = await fetch(withBasePath("/api/admin/bookings/walk-in"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ guestName, serviceIds, vehicleSize, markPaid }),

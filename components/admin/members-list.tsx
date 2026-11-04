@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,7 @@ export function MembersList({ members }: { members: Member[] }) {
 
   async function handleCancel(id: string) {
     setCancelingId(id);
-    await fetch(`/api/admin/memberships/${id}/cancel`, { method: "POST" });
+    await fetch(withBasePath(`/api/admin/memberships/${id}/cancel`), { method: "POST" });
     setCancelingId(null);
     router.refresh();
   }

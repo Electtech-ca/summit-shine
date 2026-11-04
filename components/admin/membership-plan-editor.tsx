@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { MembershipPlan } from "@prisma/client";
@@ -27,7 +28,7 @@ export function MembershipPlanEditor({ plan }: { plan: MembershipPlan }) {
     setError(null);
     setSaved(false);
 
-    const res = await fetch(`/api/admin/membership-plans/${plan.id}`, {
+    const res = await fetch(withBasePath(`/api/admin/membership-plans/${plan.id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

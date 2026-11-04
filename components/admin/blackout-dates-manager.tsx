@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BlackoutDate } from "@prisma/client";
@@ -16,7 +17,7 @@ export function BlackoutDatesManager({ dates }: { dates: BlackoutDate[] }) {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await fetch("/api/admin/blackout-dates", {
+    await fetch(withBasePath("/api/admin/blackout-dates"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date, reason: reason || undefined }),
@@ -29,7 +30,7 @@ export function BlackoutDatesManager({ dates }: { dates: BlackoutDate[] }) {
 
   async function remove(id: string) {
     setPendingId(id);
-    await fetch(`/api/admin/blackout-dates/${id}`, { method: "DELETE" });
+    await fetch(withBasePath(`/api/admin/blackout-dates/${id}`), { method: "DELETE" });
     setPendingId(null);
     router.refresh();
   }

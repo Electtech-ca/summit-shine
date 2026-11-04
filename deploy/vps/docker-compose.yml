@@ -1,0 +1,58 @@
+# Summit Shine booking demo, ElectTech portfolio copy at https://www.electtech.ca/portfolio/summit-shine
+# Lives on the VPS as /opt/clients/summit-shine/docker-compose.yml (a copy of this file), with the
+# repository's tree in ./src (deploy/vps/deploy.sh uploads it) and the secrets in .env.production
+# (mode 600, never in the repository). Caddy (/etc/caddy/Caddyfile) proxies the path to port 3040.
+# Its database was restored on 2026-11-04 from the paused Supabase project's backup, archived at
+# /opt/backups/supabase-cloud/summit-shine.backup.gz.
+#
+# Run compose as:  sudo docker compose --env-file .env.production <command>
+name: summit-shine
+
+# Docker keeps container logs without a size limit by default; cap them so they can't fill the disk
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: summit-shine-db
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_DB: summit_shine
+      POSTGRES_USER: summit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Loopback only (Docker-published ports bypass UFW, so 0.0.0.0 would mean the internet).
+    # The image build renders static pages from the database, and BuildKit reaches it this way.
+    ports:
+      - 127.0.0.1:5444:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U summit -d summit_shine"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    # Built by deploy/vps/deploy.sh with docker buildx: the build renders pages from the database over
+    # the host network, a privilege compose's own build can't be given non-interactively.
+    image: summit-shine-web
+    container_name: summit-shine-web
+    restart: unless-stopped
+    logging: *logging
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://summit:${POSTGRES_PASSWORD}@db:5432/summit_shine
+      DIRECT_URL: postgresql://summit:${POSTGRES_PASSWORD}@db:5432/summit_shine
+    ports:
+      - 127.0.0.1:3040:3000
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
